@@ -80,9 +80,20 @@ export function generateMaze(rows, cols) {
     }
   }
 
-  // Create a path from start to exit (ensure entrance and exit are open)
+  // Ensure entry and exit are open
   grid[0][0].walls.top = false; // Entry
   grid[rows - 1][cols - 1].walls.bottom = false; // Exit
   
   return grid;
+}
+
+// Helper function to ensure path complexity
+export function analyzeMazeComplexity(maze) {
+  // Implementation could count dead ends, measure longest path, etc.
+  // For now, we're just returning a placeholder
+  return {
+    deadEnds: 0,
+    longestPath: 0,
+    averageBranchingFactor: 0
+  };
 }

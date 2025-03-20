@@ -1,6 +1,7 @@
 import React from 'react';
+import HighScoresList from './HighScoresList';
 
-const GameControls = ({ timer, onRestart, gameCompleted, onDirectionClick }) => {
+const GameControls = ({ timer, onRestart, gameCompleted, onDirectionClick, highScores, difficulty }) => {
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-4">
@@ -10,6 +11,7 @@ const GameControls = ({ timer, onRestart, gameCompleted, onDirectionClick }) => 
         <button
           onClick={onRestart}
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded cursor-pointer transition-colors"
+          aria-label={gameCompleted ? 'Play Again' : 'Restart game'}
         >
           {gameCompleted ? 'Play Again' : 'Restart'}
         </button>
@@ -30,7 +32,7 @@ const GameControls = ({ timer, onRestart, gameCompleted, onDirectionClick }) => 
         <div className="flex justify-center mb-2">
           <button 
             onClick={() => onDirectionClick('up')}
-            className="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center text-xl shadow-md cursor-pointer"
+            className="w-12 h-12 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center text-xl shadow-md cursor-pointer"
             aria-label="Move up"
           >
             ↑
@@ -39,26 +41,31 @@ const GameControls = ({ timer, onRestart, gameCompleted, onDirectionClick }) => 
         <div className="flex justify-center space-x-4">
           <button 
             onClick={() => onDirectionClick('left')}
-            className="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center text-xl shadow-md cursor-pointer"
+            className="w-12 h-12 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center text-xl shadow-md cursor-pointer"
             aria-label="Move left"
           >
             ←
           </button>
           <button 
             onClick={() => onDirectionClick('down')}
-            className="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center text-xl shadow-md cursor-pointer"
+            className="w-12 h-12 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center text-xl shadow-md cursor-pointer"
             aria-label="Move down"
           >
             ↓
           </button>
           <button 
             onClick={() => onDirectionClick('right')}
-            className="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center text-xl shadow-md cursor-pointer"
+            className="w-12 h-12 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center text-xl shadow-md cursor-pointer"
             aria-label="Move right"
           >
             →
           </button>
         </div>
+      </div>
+      
+      {/* High Scores */}
+      <div className="mt-6">
+        <HighScoresList highScores={highScores} difficulty={difficulty} />
       </div>
     </div>
   );

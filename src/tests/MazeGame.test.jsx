@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import MazeGame from '../components/MazeGame';
 import { generateMaze } from '../utils/mazeGenerator';
@@ -15,9 +15,9 @@ vi.mock('../utils/mazeGenerator', () => ({
         row.push({
           visited: true,
           walls: {
-            top: r === 0,
+            top: r === 0 && c !== 0, // Open path at the start
             right: c === cols - 1,
-            bottom: r === rows - 1,
+            bottom: r === rows - 1 && c !== cols - 1, // Open path at the exit
             left: c === 0
           }
         });
@@ -25,10 +25,52 @@ vi.mock('../utils/mazeGenerator', () => ({
       grid.push(row);
     }
     
-    // Create a direct path from start to finish
+    // Create a direct path from start to finish (for testing)
+    for (let i = 0; i < rows - 1; i++) {
+      grid[i][0].walls.bottom = false;
+      grid[i + 1][0].walls.top = false;
+    }
+    
+    for (let i = 0; i < cols - 1; i++) {
+      grid[rows - 1][i].walls.right = false;
+      grid[rows - 1][i + 1].walls.left = false;
+    }
+    
     return grid;
+  }),
+  analyzeMazeComplexity: vi.fn().mockReturnValue({
+    deadEnds: 4,
+    longestPath: 25,
+    averageBranchingFactor: 1.5
   })
 }));
+
+// Mock localStorage
+beforeEach(() => {
+  const localStorageMock = (() => {
+    let store = {};
+    return {
+      getItem: vi.fn((key) => store[key] || null),
+      setItem: vi.fn((key, value) => {
+        store[key] = value.toString();
+      }),
+      removeItem: vi.fn((key) => {
+        delete store[key];
+      }),
+      clear: vi.fn(() => {
+        store = {};
+      }),
+    };
+  })();
+
+  Object.defineProperty(window, 'localStorage', {
+    value: localStorageMock,
+  });
+  
+  // Mock audio
+  window.HTMLMediaElement.prototype.play = vi.fn();
+  window.HTMLMediaElement.prototype.pause = vi.fn();
+});
 
 describe('MazeGame', () => {
   beforeEach(() => {
@@ -60,31 +102,34 @@ describe('MazeGame', () => {
   it('moves player when valid arrow key is pressed', () => {
     render(<MazeGame />);
     
-    // Player starts at top-left
-    const initialPlayerPosition = { row: 0, col: 0 };
-    
     // Move right
-    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    fireEvent.keyDown(window, { key: 'ArrowDown' });
     
-    // Player should have moved
+    // Should have attempted to move
     expect(generateMaze).toHaveBeenCalled();
   });
   
-  it('displays game completed message when player reaches the exit', () => {
+  it('shows different difficulty options', () => {
     render(<MazeGame />);
     
-    // Move to the exit (this is a simplified test since we can't check DOM position directly)
-    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    expect(screen.getByText('Easy')).toBeInTheDocument();
+    expect(screen.getByText('Medium')).toBeInTheDocument();
+    expect(screen.getByText('Hard')).toBeInTheDocument();
+  });
+  
+  it('prevents changing difficulty during an active game', async () => {
+    render(<MazeGame />);
+    
+    // Press arrow key to start game
     fireEvent.keyDown(window, { key: 'ArrowDown' });
     
-    // Now we need to force the player to the exit position
-    // This is more of an integration test, but we'll simulate reaching the exit
-    const customEvent = new CustomEvent('mazeCompleted', { detail: true });
-    window.dispatchEvent(customEvent);
+    // Try to change difficulty
+    fireEvent.click(screen.getByText('Easy'));
     
-    // Check for completion message (won't actually show because we need to modify component to listen for our test event)
-    // In a real app we could use more sophisticated testing approaches
-    expect(screen.queryByText(/Maze Completed/)).not.toBeInTheDocument();
+    // Should show message about finishing or restarting
+    await waitFor(() => {
+      expect(screen.getByText(/Finish the current maze or restart to change difficulty/)).toBeInTheDocument();
+    });
   });
   
   it('generates a new maze when restart button is clicked', () => {
@@ -117,5 +162,10 @@ describe('MazeGame', () => {
     expect(downButton).toBeInTheDocument();
     expect(leftButton).toBeInTheDocument();
     expect(rightButton).toBeInTheDocument();
+  });
+  
+  it('shows high scores section', () => {
+    render(<MazeGame />);
+    expect(screen.getByText(/Best Times/)).toBeInTheDocument();
   });
 });

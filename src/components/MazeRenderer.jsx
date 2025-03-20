@@ -1,9 +1,8 @@
 import React from 'react';
 
-const MazeRenderer = ({ maze, playerPosition, prevPlayerPosition, exitPosition, isMoving }) => {
+const MazeRenderer = ({ maze, playerPosition, prevPlayerPosition, exitPosition, isMoving, cellSize = 24 }) => {
   if (!maze.length) return <div className="text-center p-4">Loading maze...</div>;
 
-  const cellSize = 24; // Increased size for better visibility
   const mazeWidth = maze[0].length * cellSize;
   const mazeHeight = maze.length * cellSize;
 
@@ -12,8 +11,13 @@ const MazeRenderer = ({ maze, playerPosition, prevPlayerPosition, exitPosition, 
   const playerY = playerPosition.row * cellSize + cellSize / 2;
 
   return (
-    <div className="relative border-2 border-gray-800 mb-4 overflow-hidden">
-      <svg width={mazeWidth} height={mazeHeight}>
+    <div className="relative border-2 border-gray-800 mb-4 overflow-hidden bg-gray-50 shadow-inner">
+      <svg 
+        width={mazeWidth} 
+        height={mazeHeight}
+        aria-label="Maze game board"
+        role="img"
+      >
         {/* Background for cells */}
         {maze.map((row, rowIdx) => 
           row.map((cell, colIdx) => (
@@ -31,6 +35,8 @@ const MazeRenderer = ({ maze, playerPosition, prevPlayerPosition, exitPosition, 
                 // Regular cell
                 "white"
               }
+              stroke="#f0f0f0"
+              strokeWidth="0.5"
             />
           ))
         )}
@@ -95,9 +101,11 @@ const MazeRenderer = ({ maze, playerPosition, prevPlayerPosition, exitPosition, 
           cx={0 * cellSize + cellSize / 2}
           cy={0 * cellSize + cellSize / 2}
           r={cellSize / 5}
-          fill="blue"
-          opacity="0.5"
-        />
+          fill="#4169E1"
+          opacity="0.6"
+        >
+          <title>Start</title>
+        </circle>
         
         {/* Draw the exit (green square with 'EXIT' text) */}
         <rect
@@ -105,20 +113,31 @@ const MazeRenderer = ({ maze, playerPosition, prevPlayerPosition, exitPosition, 
           y={exitPosition.row * cellSize + 3}
           width={cellSize - 6}
           height={cellSize - 6}
-          fill="green"
+          fill="#2ECC71"
           rx="4"
-        />
+        >
+          <title>Exit</title>
+        </rect>
         <text
           x={exitPosition.col * cellSize + cellSize / 2}
           y={exitPosition.row * cellSize + cellSize / 2 + 1}
           textAnchor="middle"
           dominantBaseline="middle"
           fill="white"
-          fontSize="8"
+          fontSize={cellSize < 20 ? "6" : "8"}
           fontWeight="bold"
         >
           EXIT
         </text>
+        
+        {/* Player's trail */}
+        <circle
+          cx={prevPlayerPosition.col * cellSize + cellSize / 2}
+          cy={prevPlayerPosition.row * cellSize + cellSize / 2}
+          r={cellSize / 6}
+          fill="#4169E1"
+          opacity="0.2"
+        />
         
         {/* Draw the player with animation */}
         <circle
@@ -138,6 +157,7 @@ const MazeRenderer = ({ maze, playerPosition, prevPlayerPosition, exitPosition, 
             dur="1s" 
             repeatCount="indefinite" 
           />
+          <title>Player</title>
         </circle>
       </svg>
     </div>

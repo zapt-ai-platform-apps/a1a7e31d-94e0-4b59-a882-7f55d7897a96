@@ -2,11 +2,19 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { generateMaze } from '../utils/mazeGenerator';
 import MazeRenderer from './MazeRenderer';
 import GameControls from './GameControls';
+import DifficultySelector from './DifficultySelector';
+import { useHighScores } from '../hooks/useHighScores';
 
 const MazeGame = () => {
-  // Default maze size
-  const rows = 15;
-  const cols = 15;
+  // Game configuration
+  const [difficulty, setDifficulty] = useState('medium');
+  const difficultySettings = {
+    easy: { rows: 10, cols: 10 },
+    medium: { rows: 15, cols: 15 },
+    hard: { rows: 20, cols: 20 }
+  };
+  
+  const { rows, cols } = difficultySettings[difficulty];
   
   // Game state
   const [maze, setMaze] = useState([]);
@@ -19,9 +27,13 @@ const MazeGame = () => {
   const [timerInterval, setTimerInterval] = useState(null);
   const [isMoving, setIsMoving] = useState(false);
   const mazeRef = useRef(null);
+  
+  // High scores
+  const { highScores, addHighScore } = useHighScores();
 
   // Generate a new maze
   const generateNewMaze = useCallback(() => {
+    console.log(`Generating new ${difficulty} maze: ${rows}x${cols}`);
     const newMaze = generateMaze(rows, cols);
     setMaze(newMaze);
     setPlayerPosition({ row: 0, col: 0 });
@@ -35,12 +47,11 @@ const MazeGame = () => {
       clearInterval(timerInterval);
       setTimerInterval(null);
     }
-  }, [rows, cols, timerInterval]);
+  }, [rows, cols, difficulty, timerInterval]);
 
   // Initialize the game
   useEffect(() => {
     generateNewMaze();
-    console.log("New maze generated");
   }, [generateNewMaze]);
 
   // Handle keyboard input for player movement
@@ -48,7 +59,7 @@ const MazeGame = () => {
     const handleKeyDown = (e) => {
       if (isMoving || gameCompleted) return;
 
-      if (!gameStarted) {
+      if (!gameStarted && ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'].includes(e.key)) {
         // Start the game and timer on first movement
         setGameStarted(true);
         const interval = setInterval(() => {
@@ -67,21 +78,25 @@ const MazeGame = () => {
         case 'ArrowUp':
           if (!maze[row][col].walls.top) {
             newRow = row - 1;
+            playMoveSound();
           }
           break;
         case 'ArrowRight':
           if (!maze[row][col].walls.right) {
             newCol = col + 1;
+            playMoveSound();
           }
           break;
         case 'ArrowDown':
           if (!maze[row][col].walls.bottom) {
             newRow = row + 1;
+            playMoveSound();
           }
           break;
         case 'ArrowLeft':
           if (!maze[row][col].walls.left) {
             newCol = col - 1;
+            playMoveSound();
           }
           break;
         default:
@@ -97,15 +112,10 @@ const MazeGame = () => {
         setTimeout(() => {
           setIsMoving(false);
         }, 150); // Match this with CSS transition duration
-        
-        console.log(`Player moved to: [${newRow}, ${newCol}]`);
 
         // Check if player reached the exit
         if (newRow === exitPosition.row && newCol === exitPosition.col) {
-          setGameCompleted(true);
-          clearInterval(timerInterval);
-          setTimerInterval(null);
-          console.log("Game completed!");
+          completeGame();
         }
       }
     };
@@ -115,6 +125,42 @@ const MazeGame = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [maze, playerPosition, exitPosition, gameStarted, gameCompleted, timerInterval, isMoving]);
+
+  // Play sound effects
+  const playMoveSound = () => {
+    // Simple approach with inline audio - in a production app, you'd use a proper audio system
+    try {
+      const audio = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=");
+      audio.volume = 0.2;
+      audio.play().catch(e => console.log("Audio play failed:", e));
+    } catch (e) {
+      console.log("Audio creation failed:", e);
+    }
+  };
+
+  const playCompletionSound = () => {
+    try {
+      const audio = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=");
+      audio.volume = 0.3;
+      audio.play().catch(e => console.log("Audio play failed:", e));
+    } catch (e) {
+      console.log("Audio creation failed:", e);
+    }
+  };
+
+  // Complete the game
+  const completeGame = () => {
+    setGameCompleted(true);
+    clearInterval(timerInterval);
+    setTimerInterval(null);
+    playCompletionSound();
+    
+    // Add high score
+    const finalTime = parseFloat(timer.toFixed(1));
+    addHighScore(difficulty, finalTime);
+    
+    console.log("Game completed!");
+  };
 
   // Handle touch controls for mobile devices
   const handleTouchControl = useCallback((direction) => {
@@ -139,21 +185,25 @@ const MazeGame = () => {
       case 'up':
         if (!maze[row][col].walls.top) {
           newRow = row - 1;
+          playMoveSound();
         }
         break;
       case 'right':
         if (!maze[row][col].walls.right) {
           newCol = col + 1;
+          playMoveSound();
         }
         break;
       case 'down':
         if (!maze[row][col].walls.bottom) {
           newRow = row + 1;
+          playMoveSound();
         }
         break;
       case 'left':
         if (!maze[row][col].walls.left) {
           newCol = col - 1;
+          playMoveSound();
         }
         break;
       default:
@@ -169,15 +219,10 @@ const MazeGame = () => {
       setTimeout(() => {
         setIsMoving(false);
       }, 150); // Match this with CSS transition duration
-      
-      console.log(`Player moved to: [${newRow}, ${newCol}]`);
 
       // Check if player reached the exit
       if (newRow === exitPosition.row && newCol === exitPosition.col) {
-        setGameCompleted(true);
-        clearInterval(timerInterval);
-        setTimerInterval(null);
-        console.log("Game completed!");
+        completeGame();
       }
     }
   }, [maze, playerPosition, exitPosition, gameStarted, gameCompleted, timerInterval, isMoving]);
@@ -188,9 +233,23 @@ const MazeGame = () => {
     console.log("Game restarted");
   };
 
+  // Change difficulty
+  const handleDifficultyChange = (newDifficulty) => {
+    if (difficulty !== newDifficulty) {
+      setDifficulty(newDifficulty);
+      // The maze will be regenerated due to useEffect dependency
+    }
+  };
+
   return (
-    <div className="flex flex-col items-center p-6 bg-white rounded-lg shadow-lg" ref={mazeRef}>
+    <div className="flex flex-col items-center p-6 bg-white rounded-lg shadow-lg w-full max-w-2xl" ref={mazeRef}>
       <h1 className="text-2xl font-bold mb-4 text-blue-600">Maze Runner</h1>
+      
+      <DifficultySelector 
+        difficulty={difficulty} 
+        onDifficultyChange={handleDifficultyChange} 
+        disabled={gameStarted && !gameCompleted}
+      />
       
       <MazeRenderer 
         maze={maze} 
@@ -198,6 +257,7 @@ const MazeGame = () => {
         prevPlayerPosition={prevPlayerPosition}
         exitPosition={exitPosition}
         isMoving={isMoving}
+        cellSize={difficulty === 'hard' ? 18 : difficulty === 'easy' ? 30 : 24}
       />
       
       <GameControls 
@@ -205,6 +265,8 @@ const MazeGame = () => {
         onRestart={handleRestart}
         gameCompleted={gameCompleted}
         onDirectionClick={handleTouchControl}
+        highScores={highScores[difficulty]}
+        difficulty={difficulty}
       />
     </div>
   );
