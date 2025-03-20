@@ -96,4 +96,26 @@ describe('MazeGame', () => {
     // Should generate a new maze
     expect(generateMaze).toHaveBeenCalledTimes(2); // Once on initial render, once on restart
   });
+  
+  it('displays touch controls on mobile devices', () => {
+    // Mock window.innerWidth to simulate mobile device
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 500, // Mobile width
+    });
+    
+    render(<MazeGame />);
+    
+    // Check if touch controls are rendered
+    const upButton = screen.getByLabelText('Move up');
+    const downButton = screen.getByLabelText('Move down');
+    const leftButton = screen.getByLabelText('Move left');
+    const rightButton = screen.getByLabelText('Move right');
+    
+    expect(upButton).toBeInTheDocument();
+    expect(downButton).toBeInTheDocument();
+    expect(leftButton).toBeInTheDocument();
+    expect(rightButton).toBeInTheDocument();
+  });
 });
